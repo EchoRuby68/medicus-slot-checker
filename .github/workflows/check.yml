@@ -7,10 +7,18 @@ on:
 
 jobs:
   check:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Diagnostics
+        run: |
+          echo "Run triggered by: $GITHUB_EVENT_NAME"
+          date -u
+          echo "Ref: $GITHUB_REF"
+          echo "Run number: $GITHUB_RUN_NUMBER"
+          python3 -V
 
       - name: Check appointments
         env:
