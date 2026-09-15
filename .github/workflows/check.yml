@@ -1,0 +1,19 @@
+name: Check Medicus
+
+on:
+  schedule:
+    - cron: "2/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-slim
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check appointments
+        env:
+          EMAIL: ${{ secrets.EMAIL }}
+          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
+        run: python3 check_medicus.py
