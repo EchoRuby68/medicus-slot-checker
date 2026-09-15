@@ -16,4 +16,5 @@ jobs:
         env:
           EMAIL: ${{ secrets.EMAIL }}
           EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
+          EMAIL_DESTINATION: ${{ secrets.EMAIL_DESTINATION }}
         run: python3 check_medicus.py
