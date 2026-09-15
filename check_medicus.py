@@ -16,9 +16,19 @@ FORM = {
     "lang": "pl",
 }
 
+FORM_2 = {
+    "action": "medicus_slots",
+    "nonce": "b062807f06",
+    "doc_id": "1293",
+    "idx_lekarza": "302",
+    "idx_wariantu": "3197",
+    "lang": "pl",
+}
+
+
 request = urllib.request.Request(
     URL,
-    data=urllib.parse.urlencode(FORM).encode(),
+    data=urllib.parse.urlencode(FORM_2).encode(),
     headers={"User-Agent": "Mozilla/5.0"},
 )
 
