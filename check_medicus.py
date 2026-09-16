@@ -14,24 +14,24 @@ BOOKING_URL = (
 )
 
 # Gawron himself.
-# FORM = {
-#     "action": "medicus_slots",
-#     "nonce": "040b56546a",
-#     "doc_id": "580",
-#     "idx_lekarza": "107",
-#     "idx_wariantu": "1514",
-#     "lang": "pl",
-# }
-
-# Test doctor to see if it works.
 FORM = {
     "action": "medicus_slots",
-    "nonce": "b062807f06",
-    "doc_id": "1293",
-    "idx_lekarza": "302",
-    "idx_wariantu": "3197",
+    "nonce": "040b56546a",
+    "doc_id": "580",
+    "idx_lekarza": "107",
+    "idx_wariantu": "1514",
     "lang": "pl",
 }
+
+# Test doctor to see if it works.
+# FORM = {
+#     "action": "medicus_slots",
+#     "nonce": "b062807f06",
+#     "doc_id": "1293",
+#     "idx_lekarza": "302",
+#     "idx_wariantu": "3197",
+#     "lang": "pl",
+# }
 
 # Call Medicus
 request = urllib.request.Request(
