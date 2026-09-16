@@ -1,3 +1,4 @@
+import http.cookiejar
 import json
 import os
 import re
@@ -16,7 +17,6 @@ BOOKING_URL = (
 # Gawron himself.
 FORM = {
     "action": "medicus_slots",
-    "nonce": "040b56546a",
     "doc_id": "580",
     "idx_lekarza": "107",
     "idx_wariantu": "1514",
@@ -33,30 +33,104 @@ FORM = {
 #     "lang": "pl",
 # }
 
-# Call Medicus
-request = urllib.request.Request(
-    URL,
-    data=urllib.parse.urlencode(FORM).encode(),
-    headers={"User-Agent": "Mozilla/5.0"},
+HEADERS = {
+    "User-Agent": "Mozilla/5.0",
+}
+
+# Keep cookies between loading the registration page
+# and calling the AJAX endpoint.
+cookie_jar = http.cookiejar.CookieJar()
+
+opener = urllib.request.build_opener(
+    urllib.request.HTTPCookieProcessor(cookie_jar)
 )
 
-with urllib.request.urlopen(request, timeout=15) as response:
-    result = json.load(response)
+
+# ---------------------------------------------------------
+# Fetch Gawron's page and find the current nonce
+# ---------------------------------------------------------
+
+page_request = urllib.request.Request(
+    BOOKING_URL,
+    headers=HEADERS,
+)
+
+with opener.open(page_request, timeout=15) as response:
+    page_html = response.read().decode("utf-8")
+
+nonce_patterns = [
+    r'["\'][^"\']*nonce[^"\']*["\']\s*:\s*["\']([a-f0-9]{10})["\']',
+    r'data-nonce\s*=\s*["\']([a-f0-9]{10})["\']',
+    r'\bnonce\s*[:=]\s*["\']([a-f0-9]{10})["\']',
+]
+
+nonce_candidates = []
+
+for pattern in nonce_patterns:
+    for nonce in re.findall(pattern, page_html, re.IGNORECASE):
+        if nonce not in nonce_candidates:
+            nonce_candidates.append(nonce)
+
+if not nonce_candidates:
+    raise RuntimeError("Could not find a nonce on the Medicus page.")
+
+print(f"Found {len(nonce_candidates)} nonce candidate(s).")
+
+
+# ---------------------------------------------------------
+# Find which nonce Medicus accepts
+# ---------------------------------------------------------
+
+result = None
+
+for nonce in nonce_candidates:
+    form = {
+        **FORM,
+        "nonce": nonce,
+    }
+
+    request = urllib.request.Request(
+        URL,
+        data=urllib.parse.urlencode(form).encode(),
+        headers={
+            **HEADERS,
+            "Referer": BOOKING_URL,
+        },
+    )
+
+    with opener.open(request, timeout=15) as response:
+        candidate_result = json.load(response)
+
+    if candidate_result.get("success"):
+        result = candidate_result
+        print(f"Valid nonce found: {nonce}")
+        break
+
+    print(f"Nonce rejected: {nonce}")
+
+if result is None:
+    raise RuntimeError(
+        "Found nonce candidates, but Medicus rejected all of them."
+    )
+
+
+# ---------------------------------------------------------
+# Validate availability
+# ---------------------------------------------------------
 
 print("Medicus response:", result)
 
-# Validate response
-if not result.get("success"):
-    raise RuntimeError("Medicus returned success=false")
-
-# Nothing available
 if not result["data"]["has_slots"]:
     print("No available slots.")
     exit()
 
 print("SLOT AVAILABLE!")
 
+
+# ---------------------------------------------------------
 # Extract available dates and times
+# ---------------------------------------------------------
+
 timeslots_html = result["data"]["timeslots"]
 
 slots = re.findall(
@@ -69,7 +143,11 @@ slots_text = "\n".join(
     for date, time in slots
 )
 
+
+# ---------------------------------------------------------
 # Build email
+# ---------------------------------------------------------
+
 msg = EmailMessage()
 
 msg["Subject"] = "🚨 Gawron appointment available at Medicus"
@@ -90,7 +168,11 @@ Book quickly. The available slots may disappear.
 """
 )
 
+
+# ---------------------------------------------------------
 # Send email
+# ---------------------------------------------------------
+
 with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
     smtp.login(
         os.environ["EMAIL"],
